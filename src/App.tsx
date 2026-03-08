@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 type Task = {
   completed: boolean;
@@ -70,8 +70,6 @@ function Tasks() {
               cursor-pointer`}
             >
 
-              {/* ${task.completed ? "line-through opacity-50" : ""} */}
-
               {task.title}
               
               <button
@@ -87,9 +85,93 @@ function Tasks() {
   );
 }
 
+function Timer() {
+
+  const [tempoRestante, setTempoRestante] = useState(25 * 60);
+  const [estaAtivo, setEstaAtivo] = useState(false);
+  const [modo, setModo] = useState("focus");
+
+  useEffect(() => {
+    let intervalo: ReturnType<typeof setInterval> | undefined;
+
+    if (estaAtivo && tempoRestante > 0) {
+      intervalo = setInterval(() => {
+        setTempoRestante((valorAnterior) => valorAnterior - 1);
+      }, 1000);
+    } else if (tempoRestante === 0) {
+      setEstaAtivo(false);
+      clearInterval(intervalo);
+    }
+
+    return () => clearInterval(intervalo);
+  }, [estaAtivo, tempoRestante])
+
+  const minutos = Math.floor(tempoRestante / 60);
+  const segundos = tempoRestante % 60;
+
+  const tempoFormatado = `${minutos.toString().padStart(2, "0")}:${segundos
+  .toString()
+  .padStart(2, "0")}`;
+
+  const trocarModo = useCallback((novoModo: string, minutos: number) => {
+  setModo(novoModo);
+  setTempoRestante(minutos * 60);
+  setEstaAtivo(false);
+  }, []);
+
+  const coresDoModo: Record<string, string> = {
+  focus: "text-red-400",
+  short: "text-green-400",
+  long: "text-blue-400",
+  };  
+
+  return (
+    <>
+      <div className="flex flex-row justify-center items-center w-auto gap-5">
+
+        <button
+        onClick={() => trocarModo("focus", 25)}
+        className="text-slate-500 px-7 py-2 rounded-full transition-colors duration-200 hover:bg-slate-700 hover:text-white"> Focus </button>
+
+        <button
+        onClick={() => trocarModo("short", 5)}
+        className="text-slate-500 px-7 py-2 rounded-full transition-colors duration-200 hover:bg-slate-700 hover:text-white"> Short Break </button>
+
+        <button
+        onClick={() => trocarModo("long", 15)}
+        className="text-slate-500 px-7 py-2 rounded-full transition-colors duration-200 hover:bg-slate-700 hover:text-white"> Long Break </button>
+
+      </div>
+
+      <p className={`flex justify-center items-center text-[10vw] transition-colors duration-500 ${coresDoModo[modo]}`}> {tempoFormatado} </p>
+
+      <div className="flex flex-row justify-center items-center w-auto gap-5">
+
+        <button
+        onClick={() => {
+          setEstaAtivo(!estaAtivo);
+        }}
+        className="bg-white text-slate-700 px-10 py-2 rounded-full"> Start </button>
+
+        <button
+        onClick={() => {
+          setEstaAtivo(false);
+          setTempoRestante(modo === "focus" ? 25 * 60 : modo === "short" ? 5 * 60 : 15 * 60);
+        }}
+        className="border border-slate-600 text-white px-10 py-2 rounded-full"> Reset </button>
+
+      </div>
+    </>
+  )
+}
+ 
 export default function Pomodoro() {
   return (
-    <div className= "flex justify-center bg-slate-900 h-screen w-screen">
+    <div className= "flex flex-col items-center bg-slate-900 min-h-screen w-screen">
+
+      <div className="flex flex-col items-center gap-3 m-10 p-10 w-1/3">
+        <Timer/>
+      </div>
       
       <div className="flex flex-col items-center gap-3 m-10 p-10 w-1/3">
 
